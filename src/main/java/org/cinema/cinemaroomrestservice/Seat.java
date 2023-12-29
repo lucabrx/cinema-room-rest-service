@@ -8,6 +8,10 @@ public class Seat {
         this.column = column;
     }
 
+    public Seat() {
+
+    }
+
     public int getRow() {
         return row;
     }
