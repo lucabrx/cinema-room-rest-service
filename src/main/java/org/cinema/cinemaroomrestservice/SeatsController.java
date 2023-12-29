@@ -1,26 +1,42 @@
 package org.cinema.cinemaroomrestservice;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 public class SeatsController {
-    public Seats getAllSeats() {
-        int totalRows = 9;
-        int totalColumns = 9;
-        List<Seat> seats = new ArrayList<>();
-        for (int i = 1; i <= totalRows; i++) {
-            for (int j = 1; j <= totalColumns; j++) {
-                seats.add(new Seat(i,j));
-            }
-        }
-        return new Seats(totalRows,totalColumns,seats);
+    private final Cinema cinema;
+
+    public SeatsController() {
+        this.cinema = Cinema.getAllSeats(9,9);
     }
 
     @GetMapping("/seats")
-    public Seats getSeats() {
-        return getAllSeats();
+    public CinemaResponse getSeats() {
+        return new CinemaResponse(cinema.getTotalRows(), cinema.getTotalColumns(), cinema.getAvailableSeats());
+    }
+
+    @PostMapping("/purchase")
+    public ResponseEntity<?> purchase(@RequestBody Seat seat) {
+        if(cinema.validateCinemaPurchase(seat, cinema)) {
+            return new ResponseEntity<>(Map.of("error", "The number of a row or a column is out of bounds!"), HttpStatus.BAD_REQUEST);
+        }
+
+        for(int i = 0; i < cinema.getAvailableSeats().size(); i++) {
+            Seat s = cinema.getAvailableSeats().get(i);
+            if (s.equals(seat)) {
+                cinema.getAvailableSeats().remove(i);
+                return new ResponseEntity<>(s, HttpStatus.OK);
+            }
+        }
+
+        return new ResponseEntity<>(Map.of("error", "The ticket has been already purchased!"), HttpStatus.BAD_REQUEST);
     }
 }
+
